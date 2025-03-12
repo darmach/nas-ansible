@@ -1,0 +1,74 @@
+---
+- name: Install packages
+  ansible.builtin.dnf:
+    name:
+      - samba
+      - samba-client
+      - samba-common
+      - cifs-utils
+      - wsdd
+      - python3-pexpect
+    state: present
+
+- name: Ensure the services are started and enabled
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop:
+    - smb
+    - nmb
+    - wsdd
+
+- name: Create group
+  ansible.builtin.group:
+    name: "smb"
+    state: present
+    gid: 1001
+
+- name: Create Samba only users
+  no_log: true
+  ansible.builtin.user:
+    name: "{{ item.key }}"
+    state: present
+    groups: "smb"
+    append: true
+    shell: "/sbin/nologin"
+    create_home: false
+  with_dict: "{{ samba_users }}"
+
+- name: Set password for Samba user
+  no_log: true
+  ansible.builtin.expect:
+    command: "smbpasswd -a {{ item.key }}"
+    responses:
+      "New SMB password:": "{{ item.value }}"
+      "Retype new SMB password:": "{{ item.value }}"
+  with_dict: "{{ users | combine(samba_users) }}"
+
+- name: Ensure Samba users are in smb group
+  ansible.builtin.user:
+    name: "{{ item.key }}"
+    groups: "smb"
+    append: true
+  with_dict: "{{ users | combine(samba_users) }}"
+
+- name: Create directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ (users | dict2items)[0].key }}"
+    group: "smb"
+    mode: "2770"
+  loop:
+    - "{{ path }}/external"
+    - "{{ path }}/Isoz"
+    - "{{ path }}/Media"
+
+- name: Template the config
+  ansible.builtin.template:
+    src: "templates/smb.conf.j2"
+    dest: "/etc/samba/smb.conf"
+    owner: "root"
+    mode: "0644"
+  notify: Restart Samba

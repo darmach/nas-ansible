@@ -1,0 +1,20 @@
+---
+- name: Install NFS packages
+  ansible.builtin.dnf:
+    name:
+      - nfs-utils
+    state: present
+
+- name: Ensure the NFS service is started and enabled
+  ansible.builtin.service:
+    name: "nfs-server"
+    state: started
+    enabled: true
+
+- name: Template the config
+  ansible.builtin.template:
+    src: "templates/exports.j2"
+    dest: "/etc/exports"
+    owner: "root"
+    mode: "0644"
+  notify: Restart and re-export

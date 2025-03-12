@@ -1,0 +1,41 @@
+---
+- name: Full system upgrade
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+    allowerasing: true
+  when: dnf_upgrade
+  notify: Reboot
+
+- name: Enable EPEL Repository
+  ansible.builtin.dnf:
+    name: epel-release
+    state: present
+
+- name: Install packages
+  ansible.builtin.dnf:
+    name:
+      - bash-completion
+      - vim
+      - tmux
+      - htop
+      - tree
+      - iperf3
+      - man
+      - ncurses
+      - bind-utils
+      - rsync
+
+- name: Template the configs
+  ansible.builtin.template:
+    src: "{{ item.key }}"
+    dest: "{{ item.value.path }}"
+    owner: "{{ item.value.owner }}"
+    mode: "0644"
+  with_dict:
+    "templates/.tmux.conf.j2":
+      path: "/root/.tmux.conf"
+      owner: root
+    "templates/.bashrc.j2":
+      path: "/root/.bashrc"
+      owner: root

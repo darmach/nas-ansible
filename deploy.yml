@@ -1,0 +1,55 @@
+---
+# ansible-playbook -i inventory deploy.yml -e path="/shares"
+- name: Configure host os
+  tags: os
+  hosts: servers
+  remote_user: root
+  vars:
+    dnf_upgrade: false
+  tasks:
+    - name: Import OS configure tasks
+      ansible.builtin.import_tasks: os-configure.yml
+  handlers:
+    - name: Reboot
+      ansible.builtin.reboot:
+
+- name: Add users
+  tags: users
+  hosts: servers
+  remote_user: root
+  tasks:
+    - name: Import user creation tasks
+      ansible.builtin.import_tasks: os-users.yml
+
+- name: Deploy Samba
+  tags: smb
+  hosts: servers
+  become: true
+  tasks:
+    - name: Import Samba tasks
+      ansible.builtin.import_tasks: service-samba.yml
+  handlers:
+    - name: Restart Samba
+      ansible.builtin.service:
+        name: smb
+        state: restarted
+
+- name: Deploy NFS
+  tags: nfs
+  hosts: servers
+  become: true
+  tasks:
+    - name: Import NFS tasks
+      ansible.builtin.import_tasks: service-nfs.yml
+  handlers:
+    - name: Restart NFS
+      ansible.builtin.service:
+        name: nfs-server
+        state: restarted
+      listen: Restart and re-export
+    - name: Re-export
+      ansible.builtin.command: exportfs -rav
+      register: result
+      failed_when: result.rc != 0
+      changed_when: true
+      listen: Restart and re-export

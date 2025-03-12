@@ -1,0 +1,24 @@
+---
+- name: Add users
+  no_log: true
+  ansible.builtin.user:
+    name: "{{ item.key }}"
+    uid: "{{ 1000 + loop_index }}"
+    shell: /bin/bash
+    state: present
+  with_dict: "{{ users }}"
+  loop_control:
+    index_var: loop_index
+
+- name: Allow sudo for user {{ (users | dict2items)[0].key }}
+  community.general.sudoers:
+    name: "{{ (users | dict2items)[0].key }}-sudo"
+    state: present
+    user: "{{ (users | dict2items)[0].key }}"
+    commands: ALL
+
+- name: Set authorized key taken from file
+  ansible.posix.authorized_key:
+    user: "{{ (users | dict2items)[0].key }}"
+    state: present
+    key: "{{ lookup('file', '~/.ssh/authorized_keys') }}"
