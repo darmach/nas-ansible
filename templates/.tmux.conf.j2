@@ -60,6 +60,8 @@ set-option -g status-style bg=default
 
 # MacOS mouse
 set -g mouse on
+unbind -n MouseDown3Pane
+bind -n MouseDown3Pane paste-buffer
 #set -g mouse-resize-pane on
 #set -g mouse-select-pane on
 #set -g mouse-select-window on
