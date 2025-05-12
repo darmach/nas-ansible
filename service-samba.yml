@@ -59,7 +59,7 @@
     state: directory
     owner: "{{ (users | dict2items)[0].key }}"
     group: "smb"
-    mode: "2770"
+    mode: "2775"
   loop:
     - "{{ path }}/external"
     - "{{ path }}/Isoz"
