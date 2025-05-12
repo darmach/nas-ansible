@@ -39,3 +39,14 @@
     "templates/.bashrc.j2":
       path: "/root/.bashrc"
       owner: root
+
+- name: Install Hetrix heartbeat monitor
+  ansible.builtin.cron:
+    name: "hetrixtools heartbeat monitor"
+    minute: "*/5"
+    hour: "*"
+    day: "*"
+    month: "*"
+    weekday: "*"
+    job: "/usr/bin/curl --retry 3 --retry-delay 1 -m 15 https://sm.hetrixtools.net/hb/?s={{ hetrix_token }} >/dev/null 2>&1"
+  when: hetrix_token is defined
